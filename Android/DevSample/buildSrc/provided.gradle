@@ -1,0 +1,23 @@
+configurations {
+    provided
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+    }
+}
+
+dependencies {
+    if (gradle.startParameter.projectDir == project.projectDir) {
+        // gradlew -p buildSrc xx
+        provided 'com.android.tools.build:gradle:2.1.2'
+    } else {
+        compile 'com.android.tools.build:gradle:2.1.2'
+    }
+}
+
+tasks.withType(GroovyCompile) {
+    sourceCompatibility = '1.7'
+    targetCompatibility = '1.7'
+}
