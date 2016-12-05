@@ -22,6 +22,7 @@ public class Application extends android.app.Application {
         Small.setWebViewClient(new MyWebViewClient());
 
         // Required
+        // 测试1
         Small.preSetUp(this);
     }
 

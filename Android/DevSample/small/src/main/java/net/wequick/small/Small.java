@@ -53,6 +53,7 @@ import java.util.Map;
  */
 public final class Small {
 
+    // 测试2
     public static final String KEY_QUERY = "small-query";
     public static final String EXTRAS_KEY_RET = "small-ret";
     public static final int REQUEST_CODE_DEFAULT = 10000;
