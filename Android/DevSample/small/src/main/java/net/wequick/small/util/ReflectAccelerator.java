@@ -49,6 +49,7 @@ import dalvik.system.DexFile;
 
 /**
  * This class consists exclusively of static methods that accelerate reflections.
+ * 这个类只包括加速反射的静态方法
  */
 public class ReflectAccelerator {
     // AssetManager.addAssetPath
@@ -167,6 +168,7 @@ public class ReflectAccelerator {
          * @param pkg archive android package with any file extensions
          * @param dexFile
          * @return dalvik.system.DexPathList$Element
+         *用.so文件生成dex文件，通过反射添加到类加载器的dexElements里面去
          */
         private static Object makeDexElement(File pkg, DexFile dexFile) throws Exception {
             return makeDexElement(pkg, false, dexFile);
@@ -354,7 +356,7 @@ public class ReflectAccelerator {
 
     //______________________________________________________________________________________________
     // API
-
+//  反射调用AssetManager对象并实例化,插件里的资源通过AssetManager加载
     public static AssetManager newAssetManager() {
         AssetManager assets;
         try {
@@ -468,19 +470,24 @@ public class ReflectAccelerator {
             throw new IllegalStateException(e);
         }
     }
-
+//  ActivityThread才是描述客户端进程的类。也就是说当新创建一个应用进程时，
+//  系统就会为我们新构造一个ActivityThread对象
     public static Object getActivityThread(Context context, Class<?> activityThread) {
         try {
-            // ActivityThread.currentActivityThread()
+            // ActivityThread.currentActivityThread()，
+            // 从类对象activityThread中获取currentActivityThread()方法
             Method m = activityThread.getMethod("currentActivityThread", new Class[0]);
+            //开启获取对象的私有对象的权限
             m.setAccessible(true);
             Object thread = m.invoke(null, new Object[0]);
             if (thread != null) return thread;
 
             // context.@mLoadedApk.@mActivityThread
             Field mLoadedApk = context.getClass().getField("mLoadedApk");
+            //开启获取对象的私有对象的权限
             mLoadedApk.setAccessible(true);
             Object apk = mLoadedApk.get(context);
+            //获取对象ActivityThreadField
             Field mActivityThreadField = apk.getClass().getDeclaredField("mActivityThread");
             mActivityThreadField.setAccessible(true);
             return mActivityThreadField.get(apk);
@@ -507,7 +514,8 @@ public class ReflectAccelerator {
             V23_.expandNativeLibraryDirectories(classLoader, libPath);
         }
     }
-
+    /**在ReflectAccelerator中完成原来execStartActivity函数的调用*/
+    //  将系统中Instrumentation的execStartActivity调用成自己定义的execStartActivity
     public static Instrumentation.ActivityResult execStartActivity(
             Instrumentation instrumentation,
             Context who, IBinder contextThread, IBinder token, Activity target,
@@ -515,7 +523,7 @@ public class ReflectAccelerator {
         return V21_.execStartActivity(instrumentation,
                 who, contextThread, token, target, intent, requestCode, options);
     }
-
+    //  将系统中Instrumentation的execStartActivity调用成自己定义的execStartActivity
     public static Instrumentation.ActivityResult execStartActivity(
             Instrumentation instrumentation,
             Context who, IBinder contextThread, IBinder token, Activity target,
@@ -585,7 +593,7 @@ public class ReflectAccelerator {
         }
         arrField.set(target, sliced);
     }
-
+//  放射获取到原方法
     private static Method getMethod(Class cls, String methodName, Class[] types) {
         try {
             Method method = cls.getMethod(methodName, types);
@@ -605,7 +613,7 @@ public class ReflectAccelerator {
             return null;
         }
     }
-
+    //对反射出来的类中方法进行参数进行替换
     private static <T> T invoke(Method method, Object target, Object... args) {
         try {
             return (T) method.invoke(target, args);

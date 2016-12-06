@@ -40,8 +40,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * This class consists exclusively of static methods that operate on bundle.
- *
+ * 这个类完全由操作Bundle(捆绑)的静态方法组成。
+ *接口类，提供用户能使用的各类接口；
  * <h3>Core APIs</h3>
  * <ul>
  *     <li>{@link #setUp(Context, OnCompleteListener)} resolve the <tt>bundle.json</tt> to setup bundle launchers.</li>
@@ -50,10 +50,10 @@ import java.util.Map;
  *     <li>{@link #setWebViewClient(WebViewClient)} customize the web view behaviors for web bundle</li>
  *     <li>{@link #registerJsHandler(String, JsHandler)} customize the javascript api for web bundle</li>
  * </ul>
+ *
  */
 public final class Small {
 
-    // 测试2
     public static final String KEY_QUERY = "small-query";
     public static final String EXTRAS_KEY_RET = "small-ret";
     public static final int REQUEST_CODE_DEFAULT = 10000;
@@ -66,7 +66,7 @@ public final class Small {
 
     private static Application sContext = null;
     private static String sBaseUri = ""; // base url of uri
-    private static boolean sIsNewHostApp; // first launched or upgraded
+    private static boolean sIsNewHostApp; // 判断是否首次启动或更新
     private static boolean sHasSetUp;
     private static int sWebActivityTheme;
 
@@ -104,6 +104,7 @@ public final class Small {
         return sHostCertificates;
     }
 
+
     public static void preSetUp(Application context) {
         sContext = context;
 
@@ -115,10 +116,12 @@ public final class Small {
         PackageManager pm = context.getPackageManager();
         String packageName = context.getPackageName();
 
-        // Check if host app is first-installed or upgraded
+        // 检查主机应用程序是否是是第一次安装或升级
         try {
             PackageInfo pi = pm.getPackageInfo(packageName, 0);
+
             int launchingVersion = pi.versionCode;
+            //判断宿主版本
             if (getLaunchedHostVersionCode() != launchingVersion) {
                 sIsNewHostApp = true;
                 setLaunchedHostVersionCode(launchingVersion);
@@ -127,7 +130,7 @@ public final class Small {
             // Never reach
         }
 
-        // Collect host certificates
+        // Collect host certificates 收集主机证书
         try {
             Signature[] ss = pm.getPackageInfo(Small.getContext().getPackageName(),
                     PackageManager.GET_SIGNATURES).signatures;
@@ -143,11 +146,13 @@ public final class Small {
         }
 
         // Check if application is started after unexpected exit (killed in background etc.)
+        // 检查是否应用程序启动后意外退出（在后台死亡等）。
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         ComponentName launchingComponent = am.getRunningTasks(1).get(0).topActivity;
         ComponentName launcherComponent = pm.getLaunchIntentForPackage(packageName).getComponent();
         if (!launchingComponent.equals(launcherComponent)) {
             // In this case, system launching the last restored activity instead of our launcher
+            // 在这种情况下，系统启动最新恢复activity，而不是我们的启动器
             // activity. Call `setUp' synchronously to ensure `Small' available.
             setUp(context, null);
         }
@@ -176,7 +181,7 @@ public final class Small {
         return Bundle.findByName(bundleName);
     }
 
-    public static boolean updateManifest(JSONObject manifest, boolean force) {
+            public static boolean updateManifest(JSONObject manifest, boolean force) {
         return Bundle.updateManifest(manifest, force);
     }
 
