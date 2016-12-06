@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<items version="2" >
+
+    <item
+        jar="D:\GitHub\Small\Android\Sample\lib.analytics\build\intermediates\transforms\smallStripped\release\jars\1\10\analytics-6.0.1-aab9085bca0c26dcb9cb11837a5f5e22cc102a5e.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="aab9085bca0c26dcb9cb11837a5f5e22cc102a5e">
+        <dex dex="D:\GitHub\Small\Android\Sample\lib.analytics\build\intermediates\pre-dexed\release\analytics-6.0.1-aab9085bca0c26dcb9cb11837a5f5e22cc102a5e_7290d3416f5ab82f6664aef77c3ec89af7033b85.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\appcompat-v7\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="e4d0cbb0b999604b349062f0214a0a228a7fd151">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-appcompat-v7-23.2.1_45d79ddde5229eb7355a7e62d5d12ac8b020cee6.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\net.wequick.small\small\1.1.0-beta5\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="af8e0cd73684fe6340eac125687ac339c35aca6c">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\net.wequick.small-small-1.1.0-beta5_dfc9b13f67bb32390dddfd5833c9930a73adf1cd.jar" />
+    </item>
+    <item
+        jar="D:\Program Files\Android\sdk\extras\android\m2repository\com\android\support\support-annotations\23.2.1\support-annotations-23.2.1.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="ccb693bc0774fcb637246f7360de25b4af7df318">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\support-annotations-23.2.1_47d1fdeca42a24a2e9e4a00659e8129e3828b769.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\support-vector-drawable\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="673d77a5bbddd766037f088e775df525c46407f0">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-support-vector-drawable-23.2.1_dd5dea127b9b2ee5595b77567aa5d54686778f8f.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app.mine\build\intermediates\transforms\smallStripped\release\jars\1\4\jni_plugin-unspecified.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="3621aad98274eb32bfae3d739948ed1d54ed6dd1">
+        <dex dex="D:\GitHub\Small\Android\Sample\app.mine\build\intermediates\pre-dexed\release\jni_plugin-unspecified_866f3eb25e2ea67f0838c7c40990a926325ec9a7.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\lib.utils\build\intermediates\transforms\smallStripped\release\jars\1\2\lib.utils-mylib.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="bb7593f15edfdd51537242dd4fe1c10886b2652d">
+        <dex dex="D:\GitHub\Small\Android\Sample\lib.utils\build\intermediates\pre-dexed\release\lib.utils-mylib_2b39a4c819f5635d7a6d38f32f8866753b6cc2a4.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\recyclerview-v7\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="e3885783ff8926ed9e2fdcd16816c2e1e73e7aee">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-recyclerview-v7-23.2.1_5e3f41876ccb6c592a15df3fb48bcdc49f0de4c8.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\animated-vector-drawable\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="3469cb457f10f74c28cbc05f069b6c894f6cbdd0">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-animated-vector-drawable-23.2.1_7524e87cf58aaa18f25bf02db4d64b3d307bdc91.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\support-v4\23.2.1\jars\libs\internal_impl-23.2.1.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="607a3d0b8013b4ccbfeb0b7cb293351994e021fb">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\internal_impl-23.2.1_1b25f6fd08241d9fe6c1262eeced2761523bc829.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\design\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="72961d8b453b46e277702f18de9d210bc019e36e">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-design-23.2.1_44f8fc39117311f59f51bfa037b4619b82b0914c.jar" />
+    </item>
+    <item
+        jar="D:\GitHub\Small\Android\Sample\app\build\intermediates\exploded-aar\com.android.support\support-v4\23.2.1\jars\classes.jar"
+        jumboMode="false"
+        revision="23.0.1"
+        sha1="3be474b1b21b31cf2fa93fe6bd641ae108d96452">
+        <dex dex="D:\GitHub\Small\Android\Sample\app\build\intermediates\pre-dexed\wequick\debug\com.android.support-support-v4-23.2.1_837606c0158c9d0d43d753c3fac2c74e091a9504.jar" />
+    </item>
+
+</items>
