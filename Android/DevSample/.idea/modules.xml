@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/DevSample.iml" filepath="$PROJECT_DIR$/DevSample.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/app/app.iml" filepath="$PROJECT_DIR$/../Sample/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/app.detail/app.detail.iml" filepath="$PROJECT_DIR$/../Sample/app.detail/app.detail.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/app.home/app.home.iml" filepath="$PROJECT_DIR$/../Sample/app.home/app.home.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/app.main/app.main.iml" filepath="$PROJECT_DIR$/../Sample/app.main/app.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/app.mine/app.mine.iml" filepath="$PROJECT_DIR$/../Sample/app.mine/app.mine.iml" />
+      <module fileurl="file://$PROJECT_DIR$/buildSrc/gradle-small.iml" filepath="$PROJECT_DIR$/buildSrc/gradle-small.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/jni_plugin/jni_plugin.iml" filepath="$PROJECT_DIR$/../Sample/jni_plugin/jni_plugin.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/lib.afterutils/lib.afterutils.iml" filepath="$PROJECT_DIR$/../Sample/lib.afterutils/lib.afterutils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/lib.analytics/lib.analytics.iml" filepath="$PROJECT_DIR$/../Sample/lib.analytics/lib.analytics.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/lib.style/lib.style.iml" filepath="$PROJECT_DIR$/../Sample/lib.style/lib.style.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/lib.utils/lib.utils.iml" filepath="$PROJECT_DIR$/../Sample/lib.utils/lib.utils.iml" />
+      <module fileurl="file://$PROJECT_DIR$/small/small.iml" filepath="$PROJECT_DIR$/small/small.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../Sample/web.about/web.about.iml" filepath="$PROJECT_DIR$/../Sample/web.about/web.about.iml" />
+    </modules>
+  </component>
+</project>
