@@ -32,6 +32,7 @@ import java.util.zip.ZipInputStream;
 
 /**
  * This class consists exclusively of static methods that operate on file.
+ * 这个类只包括对文件操作的静态方法。
  */
 public final class FileUtils {
     private static final String DOWNLOAD_PATH = "small_patch";

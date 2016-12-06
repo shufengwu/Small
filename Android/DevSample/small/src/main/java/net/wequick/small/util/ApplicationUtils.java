@@ -22,6 +22,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
 
+import java.net.Inet4Address;
 import java.util.List;
 
 /**
@@ -65,4 +66,5 @@ public class ApplicationUtils {
         Intent intent = getIntentOfUri(uri);
         context.startActivity(intent);
     }
+
 }

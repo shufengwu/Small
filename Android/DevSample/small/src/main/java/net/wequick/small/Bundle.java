@@ -47,7 +47,10 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * This class consists exclusively of methods that operate on apk plugin.
- *
+ * 该代表插件，保存了插件的全部信息，控制了插件的load流程，
+    以及lauch流程；它会调用各类BundleLauncher来干活；
+    其中应用启动的时候要准备插件环境，进行的就是load操作,主要是解析插件信息并缓存起来，
+    并将插件dex和资源添加到host；load完成才能进行其他插件操作
  * <p>All the <tt>bundles</tt> are loaded by <tt>bundle.json</tt>.
  * The <tt>bundle.json</tt> format and usage are in
  * <a href="https://github.com/wequick/Small/wiki/UI-route">UI Route</a>.
@@ -58,7 +61,11 @@ import java.util.concurrent.TimeUnit;
  * the <tt>bundle</tt> is refer to a plugin file with file name in converter
  * {@code "lib" + pkg.replaceAll("\\.", "_") + ".so"}
  * and resolved by a <tt>SoBundleLauncher</tt>.
+ *加载组件，用类加载器把.so文件加载进来，解析bundle.json配置文件
  *
+ * 用.so文件生成dex文件，通过反射添加到类加载器的dexElements里面去
+ 一个bundle对应一个.so文件，加载bundle的过程就是用PackageManager把.so文件包含的信息读取出来，
+ 将.so的activityInfo读出来，存到一个hashmap里。
  * @see BundleLauncher
  */
 public class Bundle {
@@ -217,8 +224,10 @@ public class Bundle {
 
     /**
      * Load bundles from manifest
+     *
      */
     protected static void loadLaunchableBundles(Small.OnCompleteListener listener) {
+//      解析bundle.json，并加载bundle
         Context context = Small.getContext();
 
         boolean synchronous = (listener == null);
@@ -256,12 +265,18 @@ public class Bundle {
         }
         return sPatchManifestFile;
     }
-
+    //真正加载解析插件的各类信息并存入Bundle对象
+    //解析文件的过程比较简单，读取文件，解析为json
     private static void loadBundles(Context context) {
         JSONObject manifestData;
         try {
+            //获取patch目录下的bundle.json文件
             File patchManifestFile = getPatchManifestFile();
+
+            //获取sharepreference中存储的manifestJson
             String manifestJson = getCacheManifest();
+
+            //sharepreference中manifestJson存在
             if (manifestJson != null) {
                 // Load from cache and save as patch
                 if (!patchManifestFile.exists()) patchManifestFile.createNewFile();
@@ -271,8 +286,10 @@ public class Bundle {
                 pw.close();
                 // Clear cache
                 setCacheManifest(null);
+
+                //sharepreference中manifestJson不存在
             } else if (patchManifestFile.exists()) {
-                // Load from patch
+                // Load from patch从patch路径下加载bundle.json
                 BufferedReader br = new BufferedReader(new FileReader(patchManifestFile));
                 StringBuilder sb = new StringBuilder();
                 String line;
@@ -283,7 +300,7 @@ public class Bundle {
                 br.close();
                 manifestJson = sb.toString();
             } else {
-                // Load from built-in `assets/bundle.json'
+                // Load from built-in `assets/bundle.json'从宿主的assets目录下加载bundle.json
                 InputStream builtinManifestStream = context.getAssets().open(BUNDLE_MANIFEST_NAME);
                 int builtinSize = builtinManifestStream.available();
                 byte[] buffer = new byte[builtinSize];
@@ -292,13 +309,13 @@ public class Bundle {
                 manifestJson = new String(buffer, 0, builtinSize);
             }
 
-            // Parse manifest file
+            // Parse manifest file解析manifestjson文件
             manifestData = new JSONObject(manifestJson);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-
+        //将manifestjson文件解析转化为Manifest文件
         Manifest manifest = parseManifest(manifestData);
         if (manifest == null) return;
 
@@ -698,7 +715,7 @@ public class Bundle {
     private static void loadBundles(List<Bundle> bundles) {
         sPreloadBundles = bundles;
 
-        // Prepare bundle
+        // Prepare bundle准备插件
         for (Bundle bundle : bundles) {
             bundle.prepareForLaunch();
         }

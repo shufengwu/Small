@@ -16,6 +16,7 @@
 
 package net.wequick.small;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningAppProcessInfo;
@@ -29,6 +30,7 @@ import android.content.pm.ActivityInfo;
 import android.content.pm.ApplicationInfo;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.content.Context;
@@ -57,7 +59,7 @@ import dalvik.system.DexFile;
 
 /**
  * This class launch the plugin activity by it's class name.
- *
+ *  这个类用于启动插件activity通过类名
  * <p>This class resolve the bundle who's <tt>pkg</tt> is specified as
  * <i>"*.app.*"</i> or <i>*.lib.*</i> in <tt>bundle.json</tt>.
  *
@@ -103,6 +105,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
     /**
      * Class for restore activity info from Stub to Real
+     *该类主要实现activity从存根到插件的恢复
      */
     private static class ActivityThreadHandlerCallback implements Handler.Callback {
 
@@ -113,11 +116,13 @@ public class ApkBundleLauncher extends SoBundleLauncher {
             if (msg.what != LAUNCH_ACTIVITY) return false;
 
             Object/*ActivityClientRecord*/ r = msg.obj;
+            //获取到r中的Intent对象
             Intent intent = ReflectAccelerator.getIntent(r);
+            //使用unwrapIntent方法将插件的类名赋给targetClass
             String targetClass = unwrapIntent(intent);
             if (targetClass == null) return false;
 
-            // Replace with the REAL activityInfo
+            // 替换上插件类对应的activityInfo
             ActivityInfo targetInfo = sLoadedActivities.get(targetClass);
             ReflectAccelerator.setActivityInfo(r, targetInfo);
             return false;
@@ -126,6 +131,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
     /**
      * Class for redirect activity from Stub(AndroidManifest.xml) to Real(Plugin)
+     * 从存根（AndroidManifest中注册过）的到真实的（插件）类的重定位activity
      */
     private static class InstrumentationWrapper extends Instrumentation
             implements InstrumentationInternal {
@@ -136,9 +142,14 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
         /** @Override V21+
          * Wrap activity from REAL to STUB */
+        /**插件activity到存根activity的包装 */
+        /*  execStartActivity函数在不同android版本中的参数有所不同，
+        把PluginActivity1的Intent替换成了ProxyActivity$1的Intent。
+        最后在ReflectAccelerator中完成原来函数的调用。*/
         public ActivityResult execStartActivity(
                 Context who, IBinder contextThread, IBinder token, Activity target,
                 Intent intent, int requestCode, android.os.Bundle options) {
+//           wrapIntent函数完成了替换Intent的动作
             wrapIntent(intent);
             return ReflectAccelerator.execStartActivity(sHostInstrumentation,
                     who, contextThread, token, target, intent, requestCode, options);
@@ -146,9 +157,11 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
         /** @Override V20-
          * Wrap activity from REAL to STUB */
+        /**插件activity到存根activity的包装 */
         public ActivityResult execStartActivity(
                 Context who, IBinder contextThread, IBinder token, Activity target,
                 Intent intent, int requestCode) {
+//           wrapIntent函数完成了替换Intent的动作
             wrapIntent(intent);
             return ReflectAccelerator.execStartActivity(sHostInstrumentation,
                     who, contextThread, token, target, intent, requestCode);
@@ -156,17 +169,20 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
         @Override
         /** Prepare resources for REAL */
+        /**为插件准备资源*/
         public void callActivityOnCreate(Activity activity, android.os.Bundle icicle) {
             do {
                 if (sLoadedActivities == null) break;
                 ActivityInfo ai = sLoadedActivities.get(activity.getClass().getName());
                 if (ai == null) break;
-
+                //同步插件activity对应的窗口信息
                 applyActivityInfo(activity, ai);
             } while (false);
+            //调用原Instrumentation的callActivityOnCreate方法
             sHostInstrumentation.callActivityOnCreate(activity, icicle);
 
             // Reset activity instrumentation if it was modified by some other applications #245
+            //如果它被其他的应用程序修改了一些信息,复位原先的activity instrumentation
             if (sBundleInstrumentation != null) {
                 try {
                     Field f = Activity.class.getDeclaredField("mInstrumentation");
@@ -228,6 +244,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
             // Seems should delay some time to ensure the activity can be successfully
             // restarted after the application restart.
             // FIXME: remove following thread if you find the better place to `killProcess'
+
             new Thread() {
                 @Override
                 public void run() {
@@ -250,36 +267,47 @@ public class ApkBundleLauncher extends SoBundleLauncher {
                 String realClazz = activity.getClass().getName();
                 ActivityInfo ai = sLoadedActivities.get(realClazz);
                 if (ai == null) break;
+                //存根activity与真实activity解绑
                 inqueueStubActivity(ai, realClazz);
             } while (false);
+            //调用原Instrumentation的callActivityOnDestroy方法
             sHostInstrumentation.callActivityOnDestroy(activity);
         }
 
+        /*wrapIntent方法将插件activity类保存在intent的category中，
+        同时将intent的component里面的类替换为 host中声明的占位Activity，
+        以通过ActivityManager的检查*/
         private void wrapIntent(Intent intent) {
             ComponentName component = intent.getComponent();
             String realClazz;
             if (component == null) {
-                // Implicit way to start an activity
+                // 隐式方法启动一个Actvity
+                /**隐式，即不是像显式的那样直接指定需要调用的Activity，隐式不明确指定启动哪个Activity，
+                 * 而是设置Action、Data、Category，让系统来筛选出合适的Activity。
+                 * 筛选是根据所有的<intent-filter>来筛选。*/
+            //向component传入包管理器，可以对包管理器进行查询以确定是否有Activity能够启动该Intent：
                 component = intent.resolveActivity(Small.getContext().getPackageManager());
                 if (component != null) return; // ignore system or host action
-
                 realClazz = resolveActivity(intent);
                 if (realClazz == null) return;
             } else {
+            //获得插件类对象
                 realClazz = component.getClassName();
             }
 
             if (sLoadedActivities == null) return;
-
+            //启动activities是这个插件类对象的
             ActivityInfo ai = sLoadedActivities.get(realClazz);
             if (ai == null) return;
 
             // Carry the real(plugin) class for incoming `newActivity' method.
+            //向该插件类中添加到intent的一个名为REDIRECT_FLAG的Category
             intent.addCategory(REDIRECT_FLAG + realClazz);
+            //从插件Activity类对应变换到存根的Activity类
             String stubClazz = dequeueStubActivity(ai, realClazz);
             intent.setComponent(new ComponentName(Small.getContext(), stubClazz));
         }
-
+        //根据intent找到跳转的插件Activity
         private String resolveActivity(Intent intent) {
             if (sLoadedIntentFilters == null) return null;
 
@@ -307,17 +335,21 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         private String[] mStubQueue;
 
         /** Get an usable stub activity clazz from real activity */
+        /**从真实Activity得到一个可用的存根Activity*/
         private String dequeueStubActivity(ActivityInfo ai, String realActivityClazz) {
+
+            //判断插件Activity的launchMode是否是standard，是就返回launchMode是standard的存根Activity
             if (ai.launchMode == ActivityInfo.LAUNCH_MULTIPLE) {
-                // In standard mode, the stub activity is reusable.
-                // Cause the `windowIsTranslucent' attribute cannot be dynamically set,
-                // We should choose the STUB activity with translucent or not here.
+                // In standard mode, the stub activity is reusable.在标准模式下，存根Activity是可重复使用的。
+                // Cause the `windowIsTranslucent' attribute cannot be dynamically set,由于` windowistranslucent”属性不能动态设置
+                // We should choose the STUB activity with translucent or not here.我们应该选择的存根activity是半透明或不是
                 Resources.Theme theme = Small.getContext().getResources().newTheme();
                 theme.applyStyle(ai.getThemeResource(), true);
                 TypedArray sa = theme.obtainStyledAttributes(
                         new int[] { android.R.attr.windowIsTranslucent });
                 boolean translucent = sa.getBoolean(0, false);
                 sa.recycle();
+                //判断插件Activity是否是Translucent主题的，并使用相应的存根Activity
                 return translucent ? STUB_ACTIVITY_TRANSLUCENT : STUB_ACTIVITY_PREFIX;
             }
 
@@ -326,7 +358,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
             int countForMode = STUB_ACTIVITIES_COUNT;
             int countForAll = countForMode * 3; // 3=[singleTop, singleTask, singleInstance]
             if (mStubQueue == null) {
-                // Lazy init
+                // 简单初始化字符串数组
                 mStubQueue = new String[countForAll];
             }
             int offset = (ai.launchMode - 1) * countForMode;
@@ -335,10 +367,12 @@ public class ApkBundleLauncher extends SoBundleLauncher {
                 if (usedActivityClazz == null) {
                     if (availableId == -1) availableId = i;
                 } else if (usedActivityClazz.equals(realActivityClazz)) {
+                    //判断这个插件Activity是否已经使用过存根的Activity
                     stubId = i;
                 }
             }
             if (stubId != -1) {
+                //是使用过存根的Activity就返回其对应的存根Activity
                 availableId = stubId;
             } else if (availableId != -1) {
                 mStubQueue[availableId + offset] = realActivityClazz;
@@ -346,14 +380,15 @@ public class ApkBundleLauncher extends SoBundleLauncher {
                 // TODO:
                 Log.e(TAG, "Launch mode " + ai.launchMode + " is full");
             }
+            //返回的数据格式是：PACKAGE_NAME +.A+{1,2,3}+{0,1,2,3};就Manifest中对应的存根Activity
             return STUB_ACTIVITY_PREFIX + ai.launchMode + availableId;
         }
 
         /** Unbind the stub activity from real activity */
+        /** 将存根activity与真实activity解绑*/
         private void inqueueStubActivity(ActivityInfo ai, String realActivityClazz) {
             if (ai.launchMode == ActivityInfo.LAUNCH_MULTIPLE) return;
             if (mStubQueue == null) return;
-
             int countForMode = STUB_ACTIVITIES_COUNT;
             int offset = (ai.launchMode - 1) * countForMode;
             for (int i = 0; i < countForMode; i++) {
@@ -366,15 +401,18 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         }
     }
 
+
     private static String unwrapIntent(Intent intent) {
+        //得到该intent对象中的所有category
         Set<String> categories = intent.getCategories();
         if (categories == null) return null;
 
-        // Get plugin activity class name from categories
+        //通过查找categories其中名为REDIRECT_FLAG的category来找到原来插件activity类名
         Iterator<String> it = categories.iterator();
         while (it.hasNext()) {
             String category = it.next();
             if (category.charAt(0) == REDIRECT_FLAG) {
+                //返回对应插件activity类名
                 return category.substring(1);
             }
         }
@@ -383,6 +421,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
     /**
      * A context wrapper that redirect some host environments to plugin
+     *
      */
     private static final class BundleApplicationContext extends ContextWrapper {
 
@@ -412,35 +451,59 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         }
     }
 
+    /**
+     * 该方法注入instrumentation，为解决Activity的启动和生命周期问题做准备。
+     * */
+    /**　ActivityThread中有一个单例对象sCurrentActivityThread，它是在attche时被赋值的。
+    Instrumentation在ActivityThread中的应用是mInstrumentation，
+    所以我们先通过ActivityThread的静态方法currentActivityThread得到它的实例sCurrentActivityThread，
+    然后找到它的成员mInstrumentation，把它的引用对象换成自己实现的InstrumentationWrapper。
+    InstrumentationWrapper也是Instrumentation类型，它里面实现了execStartActivity和newActivity这两个方法，
+    用来替换掉原来的函数调用。*/
     @Override
     public void setUp(Context context) {
+        //ApkBundleLauncher重写了setUp方法,替换掉ActivityThread的mInstrumentation成员变量
         super.setUp(context);
         if (sHostInstrumentation == null) {
             try {
-                // Inject instrumentation
+                //反射获取ActivityThread类
                 final Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
+                //获取到activityThread对象
                 Object thread = ReflectAccelerator.getActivityThread(context, activityThreadClass);
+                //反射获取到ActivityThread类中mInstrumentation成员变量
                 Field field = activityThreadClass.getDeclaredField("mInstrumentation");
+                //开启访问私有权限
                 field.setAccessible(true);
+                //取得activityThread对象中mInstrumentation成员变量的属性值
                 sHostInstrumentation = (Instrumentation) field.get(thread);
+
+                //实例化自己定义的InstrumentationWrapper()对象
                 Instrumentation wrapper = new InstrumentationWrapper();
+                //将activityThread对象中mInstrumentation属性的属性值赋值成为InstrumentationWrapper实例对象
                 field.set(thread, wrapper);
                 if (!sHostInstrumentation.getClass().getName().equals("android.app.Instrumentation")) {
                     sBundleInstrumentation = wrapper; // record for later replacement
                 }
-
+                //instanceof是java里面的二元运算符，判断左边的对象是否是右边类的实例。假如是的话，返回true；
+                // 假如不是的话，返回false。
                 if (context instanceof Activity) {
                     field = Activity.class.getDeclaredField("mInstrumentation");
                     field.setAccessible(true);
                     field.set(context, wrapper);
                 }
 
-                // Inject handler
+                // 反射获取ActivityThread类中mH成员变量
                 field = activityThreadClass.getDeclaredField("mH");
                 field.setAccessible(true);
+                //获得activityThread对象中mH成员变量的属性值
                 Handler ah = (Handler) field.get(thread);
+
+                //反射获取Handler类中mCallback成员变量
                 field = Handler.class.getDeclaredField("mCallback");
                 field.setAccessible(true);
+                //向ah对象中赋值为ActivityThreadHandlerCallback()
+                //此刻的field是mCallback成员变量，
+                // 下面就将ActivityThreadHandlerCallback的实例赋给mCallback变量
                 field.set(ah, new ActivityThreadHandlerCallback());
             } catch (Exception ignored) {
                 ignored.printStackTrace();
@@ -551,6 +614,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         return new File(bundle.getExtractPath(), entryName);
     }
 
+    //判断插件是否能加载，能加载就启动activity；
     @Override
     public void loadBundle(Bundle bundle) {
         String packageName = bundle.getPackageName();
@@ -619,6 +683,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         bundle.setEntrance(parser.getDefaultActivityName());
     }
 
+    //准备Bundle的一些必要信息：一般是生成bundle的intent信息，主要是要启动的类名的生成；
     @Override
     public void prelaunchBundle(Bundle bundle) {
         super.prelaunchBundle(bundle);
@@ -658,6 +723,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         super.launchBundle(bundle, context);
     }
 
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
     @Override
     public <T> T createObject(Bundle bundle, Context context, String type) {
         if (type.startsWith("fragment")) {
@@ -689,6 +755,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
 
     /**
      * Apply plugin activity info with plugin's AndroidManifest.xml
+     * 申请的插件Activity信息是与插件的AndroidManifest.xml里面一样
      * @param activity
      * @param ai
      */

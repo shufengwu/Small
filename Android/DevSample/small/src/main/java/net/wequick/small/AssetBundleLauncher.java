@@ -28,7 +28,7 @@ import java.net.URL;
 
 /**
  * This class launch the plugin asset by it's file name with an internal activity.
- *
+ *这个类通过它的文件名来启动插件asset，它的内部activity。
  * <p>This class resolve the bundle who's <tt>pkg</tt> is specified as
  * <i>"*.[neither app nor lib].*"</i> in <tt>bundle.json</tt>.
  *

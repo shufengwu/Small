@@ -28,6 +28,7 @@ import java.util.HashSet;
 
 /**
  * This class launch the host activity by it's class name.
+ *  这个类用于启动宿主activity通过它的类名
  *
  * <p>This class resolve the bundle who's <tt>pkg</tt> is unspecified
  * or specified as <i>"main"</i> in <tt>bundle.json</tt>.
@@ -55,6 +56,7 @@ public class ActivityLauncher extends BundleLauncher {
         super.setUp(context);
 
         // Read the registered classes in host's manifest file
+        //在宿主manifest文件里面读取注册类
         PackageInfo pi;
         try {
             pi = context.getPackageManager().getPackageInfo(

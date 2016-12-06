@@ -33,6 +33,9 @@ import java.io.File;
  *     <li>{@link ApkBundleLauncher} resolve the apk bundle</li>
  *     <li>{@link WebBundleLauncher} resolve the native web bundle</li>
  * </ul>
+ * SoBundleLauncher主要是提供了一个preloadBundle函数实现，里面实现了
+ * 1 按支持的type与package名对比，快速判断此BundleLauncher能否解析此插件；
+ * 2 校验插件签名是否合法来确定是否要解析次插件；
  */
 public abstract class SoBundleLauncher extends BundleLauncher implements BundleExtractor {
 

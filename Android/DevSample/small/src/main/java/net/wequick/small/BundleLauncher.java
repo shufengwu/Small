@@ -154,6 +154,7 @@ public abstract class BundleLauncher {
      * @param bundle the launching bundle
      * @param context current context
      */
+      
     public void launchBundle(Bundle bundle, Context context) {
         if (!bundle.isLaunchable()) {
             // TODO: Exit app
@@ -186,7 +187,8 @@ public abstract class BundleLauncher {
      * @param bundle the bundle to upgrade
      */
     public void upgradeBundle(Bundle bundle) {
-        // Set flag to tell Small to upgrade bundle while launching application at next time
+        // Set flag to tell Small to upgrade bundle
+        // while launching application at next time
         Small.setBundleUpgraded(bundle.getPackageName(), true);
         // TODO: Hotfix
 //        bundle.setPatching(true);

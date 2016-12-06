@@ -22,6 +22,10 @@ import net.wequick.small.webkit.WebActivity;
 
 /**
  * This class launch the plugin html file with an internal {@link WebActivity}.
+ * 该类是启动插件HTML文件与内部
+ *
+ * AssetBundleLauncher从SoBundleLauncher继承，
+ * 干了WebBundleLauncher 要做的loadBundle大部分的活。
  *
  * <p>It resolves the bundle who's <tt>pkg</tt> is specified as
  * <i>"*.web.*"</i> in <tt>bundle.json</tt>.
