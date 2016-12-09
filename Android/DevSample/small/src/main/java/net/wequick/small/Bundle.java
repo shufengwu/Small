@@ -76,6 +76,7 @@ public class Bundle {
     private static final String BUNDLES_KEY = "bundles";
     private static final String HOST_PACKAGE = "main";
 
+    //Manifest类
     private static final class Manifest {
         String version;
         List<Bundle> bundles;
@@ -128,12 +129,16 @@ public class Bundle {
      * @param name
      * @return
      */
+    //找到名为name的Bundle
     public static Bundle findByName(String name) {
+        //先从sPreloadBundles中查找
         Bundle bundle = findBundle(name, sPreloadBundles);
         if (bundle != null) return bundle;
+        //如果sPreloadBundles中没有再从sUpdatingBundles中查找
         return findBundle(name, sUpdatingBundles);
     }
 
+    //从List中找到名为name的Bundle
     private static Bundle findBundle(String name, List<Bundle> bundles) {
         if (name == null) return null;
         if (bundles == null) return null;
@@ -150,12 +155,15 @@ public class Bundle {
      * @param force <tt>true</tt> if force to update current bundles
      * @return <tt>true</tt> if successfully updated
      */
+    //更新bundle.json
     public static boolean updateManifest(JSONObject data, boolean force) {
         if (data == null) return false;
 
+        //利用data生成Manifest类对象
         Manifest manifest = parseManifest(data);
         if (manifest == null) return false;
 
+        //data转化为String
         String manifestJson;
         try {
             manifestJson = data.toString(2);
@@ -166,7 +174,9 @@ public class Bundle {
 
         if (force) {
             // Save to file
+            //从"/data/data/包名/files/"获取bundle.json文件
             File manifestFile = getPatchManifestFile();
+            //将data转化为的字符串写入bundle.json文件中
             try {
                 PrintWriter pw = new PrintWriter(new FileOutputStream(manifestFile));
                 pw.print(manifestJson);
@@ -177,8 +187,10 @@ public class Bundle {
                 return false;
             }
             // Update bundles
+            //更新manifest对象的bundles
             for (Bundle bundle : manifest.bundles) {
                 Bundle preloadBundle = findBundle(bundle.getPackageName(), sPreloadBundles);
+                //如果sPreloadBundles的Bundle中存在，则更新
                 if (preloadBundle != null) {
                     // Update bundle
                     preloadBundle.uriString = bundle.uriString;
@@ -190,6 +202,7 @@ public class Bundle {
             // Temporary add bundle
             for (Bundle bundle : manifest.bundles) {
                 Bundle preloadBundle = findBundle(bundle.getPackageName(), sPreloadBundles);
+                //如果sPreloadBundles中的Bundle没有，将新的bundle放到sUpdatingBundles中
                 if (preloadBundle == null) {
                     if (sUpdatingBundles == null) {
                         sUpdatingBundles = new ArrayList<Bundle>();
@@ -198,15 +211,18 @@ public class Bundle {
                 }
             }
             // Save to `SharedPreference'
+            //将新的JSONObject字符串存储到SharedPreferences中
             setCacheManifest(manifestJson);
         }
         return true;
     }
 
+    //获取SharedPreferences中存储的Manifest字符串
     private static String getCacheManifest() {
         return Small.getSharedPreferences().getString(BUNDLE_MANIFEST_NAME, null);
     }
 
+    //将字符串text存储到SharedPreferences中
     private static void setCacheManifest(String text) {
         SharedPreferences small = Small.getSharedPreferences();
         SharedPreferences.Editor editor = small.edit();
@@ -226,6 +242,7 @@ public class Bundle {
      * Load bundles from manifest
      *
      */
+    //load能够launch的bundle
     protected static void loadLaunchableBundles(Small.OnCompleteListener listener) {
 //      解析bundle.json，并加载bundle
         Context context = Small.getContext();
@@ -259,6 +276,7 @@ public class Bundle {
         }
     }
 
+    //获取/data/data/包名/files/bundle.json文件
     private static File getPatchManifestFile() {
         if (sPatchManifestFile == null) {
             sPatchManifestFile = new File(Small.getContext().getFilesDir(), BUNDLE_MANIFEST_NAME);
@@ -268,26 +286,33 @@ public class Bundle {
     //真正加载解析插件的各类信息并存入Bundle对象
     //解析文件的过程比较简单，读取文件，解析为json
     private static void loadBundles(Context context) {
+        //bundle.json字符串转化为JSONObject对象manifestData
         JSONObject manifestData;
         try {
             //获取patch目录下的bundle.json文件
+            //从"/data/data/包名/files/"获取bundle.json文件
             File patchManifestFile = getPatchManifestFile();
 
             //获取sharepreference中存储的manifestJson
+            ////获取SharedPreferences中存储的Manifest字符串
             String manifestJson = getCacheManifest();
 
             //sharepreference中manifestJson存在
             if (manifestJson != null) {
                 // Load from cache and save as patch
+                //如果bundle.json文件不存在，则新建bundle.json文件
                 if (!patchManifestFile.exists()) patchManifestFile.createNewFile();
+                //将manifestJson写入bundle.json文件
                 PrintWriter pw = new PrintWriter(new FileOutputStream(patchManifestFile));
                 pw.print(manifestJson);
                 pw.flush();
                 pw.close();
                 // Clear cache
+                //将SharedPreferences中存储的Manifest字符串清空
                 setCacheManifest(null);
 
                 //sharepreference中manifestJson不存在
+                //如果patch路径bundle.json文件存在
             } else if (patchManifestFile.exists()) {
                 // Load from patch从patch路径下加载bundle.json
                 BufferedReader br = new BufferedReader(new FileReader(patchManifestFile));
@@ -300,7 +325,8 @@ public class Bundle {
                 br.close();
                 manifestJson = sb.toString();
             } else {
-                // Load from built-in `assets/bundle.json'从宿主的assets目录下加载bundle.json
+                // Load from built-in `assets/bundle.json'
+                // 从宿主的assets目录下加载bundle.json
                 InputStream builtinManifestStream = context.getAssets().open(BUNDLE_MANIFEST_NAME);
                 int builtinSize = builtinManifestStream.available();
                 byte[] buffer = new byte[builtinSize];
@@ -309,13 +335,14 @@ public class Bundle {
                 manifestJson = new String(buffer, 0, builtinSize);
             }
 
-            // Parse manifest file解析manifestjson文件
+            // Parse manifest file
+            // 解析manifestjson文件
             manifestData = new JSONObject(manifestJson);
         } catch (Exception e) {
             e.printStackTrace();
             return;
         }
-        //将manifestjson文件解析转化为Manifest文件
+        //将manifestjson字符串解析转化为Manifest对象
         Manifest manifest = parseManifest(manifestData);
         if (manifest == null) return;
 
@@ -326,6 +353,7 @@ public class Bundle {
         return (sThread != null);
     }
 
+    //解析data，返回Manifest类的对象
     private static Manifest parseManifest(JSONObject data) {
         try {
             String version = data.getString(VERSION_KEY);
@@ -336,9 +364,11 @@ public class Bundle {
         }
     }
 
+    //解析data，返回Manifest类的对象
     private static Manifest parseManifest(String version, JSONObject data) {
         if (version.equals("1.0.0")) {
             try {
+                //获取bundles
                 JSONArray bundleDescs = data.getJSONArray(BUNDLES_KEY);
                 int N = bundleDescs.length();
                 List<Bundle> bundles = new ArrayList<Bundle>(N);
@@ -368,10 +398,12 @@ public class Bundle {
         return sPreloadBundles;
     }
 
+    //注册Lanuncher
     protected static void registerLauncher(BundleLauncher launcher) {
         if (sBundleLaunchers == null) {
             sBundleLaunchers = new ArrayList<BundleLauncher>();
         }
+        //将launcher加入到sBundleLaunchers
         sBundleLaunchers.add(launcher);
     }
 
@@ -382,6 +414,7 @@ public class Bundle {
         }
     }
 
+    //获取可以launch的bundle
     protected static Bundle getLaunchableBundle(Uri uri) {
         if (sPreloadBundles != null) {
             for (Bundle bundle : sPreloadBundles) {
@@ -457,12 +490,15 @@ public class Bundle {
 
     //______________________________________________________________________________
     // Instance methods
+    //Bundle构造方法
     public Bundle() {
 
     }
 
+    //Bundle构造方法
     public Bundle(JSONObject map) {
         try {
+            //初始化bundle
             this.initWithMap(map);
         } catch (JSONException e) {
             e.printStackTrace();
@@ -474,17 +510,23 @@ public class Bundle {
         mApplicableLauncher.upgradeBundle(this);
     }
 
+    //利用map初始化bundle
     private void initWithMap(JSONObject map) throws JSONException {
+        //获取.so文件的路径
         if (sUserBundlesPath == null) { // Lazy init
+            //data/app/宿主包名/lib/arm
             sUserBundlesPath = Small.getContext().getApplicationInfo().nativeLibraryDir;
             sIs64bit = sUserBundlesPath.contains("64");
         }
 
+        //判断map中是否包含pkg
         if (map.has("pkg")) {
             String pkg = map.getString("pkg");
             if (pkg != null && !pkg.equals(HOST_PACKAGE)) {
                 String soName = "lib" + pkg.replaceAll("\\.", "_") + ".so";
+                //data/app/宿主包名/lib/arm文件路径中.so
                 mBuiltinFile = new File(sUserBundlesPath, soName);
+                //data/data/包名/app_small_patch路径中.so
                 mPatchFile = new File(FileUtils.getDownloadBundlePath(), soName);
                 mPackageName = pkg;
             }
@@ -569,10 +611,12 @@ public class Bundle {
         return url;
     }
 
+    //获取jnilibs文件路径中.so
     protected File getBuiltinFile() {
         return mBuiltinFile;
     }
 
+    //获取data/data/包名/app_small_patch路径中.so
     public File getPatchFile() {
         return mPatchFile;
     }
@@ -609,6 +653,7 @@ public class Bundle {
         this.path = path;
     }
 
+    //获取Activity名：包名+类名
     protected String getActivityName() {
         String activityName = path;
         if (activityName == null || activityName.equals("")) {
@@ -712,6 +757,7 @@ public class Bundle {
 
     private static final int LOADING_TIMEOUT_MINUTES = 5;
 
+    //载入bundles
     private static void loadBundles(List<Bundle> bundles) {
         sPreloadBundles = bundles;
 
@@ -722,10 +768,20 @@ public class Bundle {
 
         // Handle I/O
         if (sIOActions != null) {
+            /*
+            * 接口 java.util.concurrent.ExecutorService 表述了异步执行的机制，
+            * 并且可以让任务在后台执行。壹個 ExecutorService 实例因此特别像壹個线程池。
+            * 事实上，在 java.util.concurrent 包中的 ExecutorService 的实现就是壹個线程池的实现。
+             */
             ExecutorService executor = Executors.newFixedThreadPool(sIOActions.size());
             for (Runnable action : sIOActions) {
                 executor.execute(action);
             }
+            /*
+            * 调用 shutdown() 方法,ExecutorService 并不会马上关闭，而是不再接收新的任务，
+            * 壹但所有的线程结束执行当前任务，ExecutorServie 才会真的关闭。
+            * 所有在调用 shutdown() 方法之前提交到 ExecutorService 的任务都会执行。
+             */
             executor.shutdown();
             try {
                 if (!executor.awaitTermination(LOADING_TIMEOUT_MINUTES, TimeUnit.MINUTES)) {

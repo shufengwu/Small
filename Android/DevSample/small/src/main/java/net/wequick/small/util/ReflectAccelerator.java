@@ -61,6 +61,7 @@ public class ReflectAccelerator {
 
     private ReflectAccelerator() { /** cannot be instantiated */ }
 
+    //Android的API版本为9_13时
     private static final class V9_13 {
 
         private static Field sDexClassLoader_mFiles_field;
@@ -69,6 +70,7 @@ public class ReflectAccelerator {
         private static Field sDexClassLoader_mDexs_field;
         private static Field sPathClassLoader_libraryPathElements_field;
 
+        //扩展DexPathList
         public static boolean expandDexPathList(ClassLoader cl,
                                                 String[] dexPaths, DexFile[] dexFiles) {
             ZipFile[] zips = null;
@@ -76,6 +78,7 @@ public class ReflectAccelerator {
             /*
              * see https://android.googlesource.com/platform/libcore/+/android-2.3_r1/dalvik/src/main/java/dalvik/system/DexClassLoader.java
              */
+                //利用反射获取mFiles、mPaths、mZips、mDexs字段
                 if (sDexClassLoader_mFiles_field == null) {
                     sDexClassLoader_mFiles_field = getDeclaredField(cl.getClass(), "mFiles");
                     sDexClassLoader_mPaths_field = getDeclaredField(cl.getClass(), "mPaths");
@@ -89,6 +92,7 @@ public class ReflectAccelerator {
                     return false;
                 }
 
+                //生成插件类中的mFiles、mPaths、mZips、mDexs数组
                 int N = dexPaths.length;
                 Object[] files = new Object[N];
                 Object[] paths = new Object[N];
@@ -100,6 +104,7 @@ public class ReflectAccelerator {
                     zips[i] = new ZipFile(path);
                 }
 
+                //插件类中的mFiles、mPaths、mZips、mDexs数组增加到宿主的相应数组中
                 expandArray(cl, sDexClassLoader_mFiles_field, files, true);
                 expandArray(cl, sDexClassLoader_mPaths_field, paths, true);
                 expandArray(cl, sDexClassLoader_mZips_field, zips, true);
@@ -120,20 +125,24 @@ public class ReflectAccelerator {
             return true;
         }
 
+        // 扩展native library
         public static void expandNativeLibraryDirectories(ClassLoader classLoader,
                                                           List<File> libPaths) {
+            //利用反射获取PathClassLoader类中的libraryPathElements字段
             if (sPathClassLoader_libraryPathElements_field == null) {
                 sPathClassLoader_libraryPathElements_field = getDeclaredField(
                         classLoader.getClass(), "libraryPathElements");
             }
             List<String> paths = getValue(sPathClassLoader_libraryPathElements_field, classLoader);
             if (paths == null) return;
+            //将插件的native library加入到libraryPathElements（List<String>）中
             for (File libPath : libPaths) {
                 paths.add(libPath.getAbsolutePath() + File.separator);
             }
         }
     }
 
+    //Android的API版本为14_时
     private static class V14_ { // API 14 and upper
 
         // DexPathList
@@ -142,9 +151,11 @@ public class ReflectAccelerator {
         private static Class sDexElementClass;
         private static Field sDexElementsField;
 
+        //扩展DexPathList
         public static boolean expandDexPathList(ClassLoader cl,
                                                 String[] dexPaths, DexFile[] dexFiles) {
             try {
+                //生成插件的Element数组
                 int N = dexPaths.length;
                 Object[] elements = new Object[N];
                 for (int i = 0; i < N; i++) {
@@ -154,6 +165,7 @@ public class ReflectAccelerator {
                     elements[i] = makeDexElement(pkg, dexFile);
                 }
 
+                //将插件的Element数组增加到宿主pathList的dexElements数组中
                 fillDexPathList(cl, elements);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -170,23 +182,30 @@ public class ReflectAccelerator {
          * @return dalvik.system.DexPathList$Element
          *用.so文件生成dex文件，通过反射添加到类加载器的dexElements里面去
          */
+        //生成Element对象
         private static Object makeDexElement(File pkg, DexFile dexFile) throws Exception {
             return makeDexElement(pkg, false, dexFile);
         }
 
+        //生成Element对象
         protected static Object makeDexElement(File dir) throws Exception {
             return makeDexElement(dir, true, null);
         }
 
+        //生成Element对象
         private static Object makeDexElement(File pkg, boolean isDirectory, DexFile dexFile) throws Exception {
+            //利用反射获取DexPathList类中的Element类
             if (sDexElementClass == null) {
                 sDexElementClass = Class.forName("dalvik.system.DexPathList$Element");
             }
+            //利用反射获取Element类的构造方法
             if (sDexElementConstructor == null) {
                 sDexElementConstructor = sDexElementClass.getConstructors()[0];
             }
+            //获取Element类构造方法的参数类型
             Class<?>[] types = sDexElementConstructor.getParameterTypes();
             switch (types.length) {
+                //当API版本为14_17时，Element类构造方法的参数个数为3
                 case 3:
                     if (types[1].equals(ZipFile.class)) {
                         // Element(File apk, ZipFile zip, DexFile dex)
@@ -206,6 +225,7 @@ public class ReflectAccelerator {
                         // Element(File apk, File zip, DexFile dex)
                         return sDexElementConstructor.newInstance(pkg, pkg, dexFile);
                     }
+                //当API版本为18_时,Element类构造方法的参数个数为4
                 case 4:
                 default:
                     // Element(File apk, boolean isDir, File zip, DexFile dex)
@@ -217,27 +237,35 @@ public class ReflectAccelerator {
             }
         }
 
+        //将elements数组元素增加到BaseDexClassLoader类pathList的dexElements数组中
         private static void fillDexPathList(ClassLoader cl, Object[] elements)
                 throws NoSuchFieldException, IllegalAccessException {
+            //利用反射获取BaseDexClassLoader类中的pathList变量
             if (sPathListField == null) {
                 sPathListField = getDeclaredField(DexClassLoader.class.getSuperclass(), "pathList");
             }
             Object pathList = sPathListField.get(cl);
+            //利用反射获取pathList对象的dexElements数组变量
             if (sDexElementsField == null) {
                 sDexElementsField = getDeclaredField(pathList.getClass(), "dexElements");
             }
+            //将elements数组的元素增加到pathList的dexElements数组中
             expandArray(pathList, sDexElementsField, elements, true);
         }
 
+        //将索引为deleteIndex的数组元素从BaseDexClassLoader类pathList的dexElements数组中删除
         public static void removeDexPathList(ClassLoader cl, int deleteIndex) {
+            //利用反射获取BaseDexClassLoader类中的pathList变量
             try {
                 if (sPathListField == null) {
                     sPathListField = getDeclaredField(DexClassLoader.class.getSuperclass(), "pathList");
                 }
                 Object pathList = sPathListField.get(cl);
+                //利用反射获取pathList对象的dexElements数组变量
                 if (sDexElementsField == null) {
                     sDexElementsField = getDeclaredField(pathList.getClass(), "dexElements");
                 }
+                //将索引为deleteIndex的元素删除
                 sliceArray(pathList, sDexElementsField, deleteIndex);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -283,6 +311,7 @@ public class ReflectAccelerator {
         }
     }
 
+    //用于扩展Android API版本为14_22的native library directories
     private static class V14_22 extends V14_ {
 
         protected static Field sDexPathList_nativeLibraryDirectories_field;
@@ -291,9 +320,11 @@ public class ReflectAccelerator {
                                                           List<File> libPaths) {
             if (sPathListField == null) return;
 
+            //获取pathList字段
             Object pathList = getValue(sPathListField, classLoader);
             if (pathList == null) return;
 
+            //利用反射获取nativeLibraryDirectories数组
             if (sDexPathList_nativeLibraryDirectories_field == null) {
                 sDexPathList_nativeLibraryDirectories_field = getDeclaredField(
                         pathList.getClass(), "nativeLibraryDirectories");
@@ -302,7 +333,9 @@ public class ReflectAccelerator {
 
             try {
                 // File[] nativeLibraryDirectories
+                //获取插件的native library directories数组
                 Object[] paths = libPaths.toArray();
+                //将插件数组增加到原来的数组中
                 expandArray(pathList, sDexPathList_nativeLibraryDirectories_field, paths, false);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -310,17 +343,21 @@ public class ReflectAccelerator {
         }
     }
 
+    //用于扩展Android API版本为23及以上的native library directories
     private static final class V23_ extends V14_22 {
 
         private static Field sDexPathList_nativeLibraryPathElements_field;
 
+        //扩展
         public static void expandNativeLibraryDirectories(ClassLoader classLoader,
                                                           List<File> libPaths) {
             if (sPathListField == null) return;
 
+            //获取pathList字段
             Object pathList = getValue(sPathListField, classLoader);
             if (pathList == null) return;
 
+            //获取nativeLibraryDirectories
             if (sDexPathList_nativeLibraryDirectories_field == null) {
                 sDexPathList_nativeLibraryDirectories_field = getDeclaredField(
                         pathList.getClass(), "nativeLibraryDirectories");
@@ -331,15 +368,18 @@ public class ReflectAccelerator {
                 // List<File> nativeLibraryDirectories
                 List<File> paths = getValue(sDexPathList_nativeLibraryDirectories_field, pathList);
                 if (paths == null) return;
+                //将插件的nativeLibraryDirectories加入到List中
                 paths.addAll(libPaths);
 
                 // Element[] nativeLibraryPathElements
+                //获取nativeLibraryPathElements数组
                 if (sDexPathList_nativeLibraryPathElements_field == null) {
                     sDexPathList_nativeLibraryPathElements_field = getDeclaredField(
                             pathList.getClass(), "nativeLibraryPathElements");
                 }
                 if (sDexPathList_nativeLibraryPathElements_field == null) return;
 
+                //插件生成nativeLibrary的Element元素
                 int N = libPaths.size();
                 Object[] elements = new Object[N];
                 for (int i = 0; i < N; i++) {
@@ -347,6 +387,7 @@ public class ReflectAccelerator {
                     elements[i] = dexElement;
                 }
 
+                //将插件元素插入到nativeLibraryPathElements数组
                 expandArray(pathList, sDexPathList_nativeLibraryPathElements_field, elements, false);
             } catch (Exception e) {
                 e.printStackTrace();
@@ -496,6 +537,7 @@ public class ReflectAccelerator {
         return null;
     }
 
+    //根据API版本，扩展DexPathList
     public static boolean expandDexPathList(ClassLoader cl, String[] dexPaths, DexFile[] dexFiles) {
         if (Build.VERSION.SDK_INT < 14) {
             return V9_13.expandDexPathList(cl, dexPaths, dexFiles);
@@ -504,6 +546,7 @@ public class ReflectAccelerator {
         }
     }
 
+    //根据API版本，扩展NativeLibraryDirectories
     public static void expandNativeLibraryDirectories(ClassLoader classLoader, List<File> libPath) {
         int v = Build.VERSION.SDK_INT;
         if (v < 14) {
@@ -559,38 +602,51 @@ public class ReflectAccelerator {
      * @param push true=push to array head, false=append to array tail
      * @throws IllegalAccessException
      */
+    //增加数组元素
     private static void expandArray(Object target, Field arrField,
                                     Object[] extraElements, boolean push)
             throws IllegalAccessException {
+        //原来的target对象的arrField数组变量
         Object[] original = (Object[]) arrField.get(target);
+        //定义新的数组，用来保存原来的数组元素和额外增加的数组元素
         Object[] combined = (Object[]) Array.newInstance(
                 original.getClass().getComponentType(), original.length + extraElements.length);
+        //将增加的数组元素放到前面
         if (push) {
             System.arraycopy(extraElements, 0, combined, 0, extraElements.length);
             System.arraycopy(original, 0, combined, extraElements.length, original.length);
+            //将增加的数组元素放到后面
         } else {
             System.arraycopy(original, 0, combined, 0, original.length);
             System.arraycopy(extraElements, 0, combined, original.length, extraElements.length);
         }
+        //将结合后的数组替换原来的数组
         arrField.set(target, combined);
     }
 
+    //根据元素索引删除数组元素
     private static void sliceArray(Object target, Field arrField, int deleteIndex)
             throws  IllegalAccessException {
+        //利用反射获取原来的数组
         Object[] original = (Object[]) arrField.get(target);
         if (original.length == 0) return;
 
+        //定义数组用来存放删减后的数组
         Object[] sliced = (Object[]) Array.newInstance(
                 original.getClass().getComponentType(), original.length - 1);
         if (deleteIndex > 0) {
             // Copy left elements
+            //将原始数组中欲删除的元素左边的元素复制到新数组
             System.arraycopy(original, 0, sliced, 0, deleteIndex);
         }
+        //欲删除元素右侧元素数量
         int rightCount = original.length - deleteIndex - 1;
         if (rightCount > 0) {
             // Copy right elements
+            //将欲删除的元素右侧元素复制到新的数组
             System.arraycopy(original, deleteIndex + 1, sliced, deleteIndex, rightCount);
         }
+        //将新数组替换原来的数组
         arrField.set(target, sliced);
     }
 //  放射获取到原方法
@@ -604,6 +660,7 @@ public class ReflectAccelerator {
         }
     }
 
+    //利用反射，获取类cls中申明的字段
     private static Field getDeclaredField(Class cls, String fieldName) {
         try {
             Field field = cls.getDeclaredField(fieldName);

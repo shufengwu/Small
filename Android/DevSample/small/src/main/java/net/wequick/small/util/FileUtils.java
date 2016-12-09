@@ -37,6 +37,7 @@ import java.util.zip.ZipInputStream;
 public final class FileUtils {
     private static final String DOWNLOAD_PATH = "small_patch";
 
+    //获得内部文件路径：/data/data/宿主包名/(app_+dir)，如果没有则创建
     public static File getInternalFilesPath(String dir) {
         File file = Small.getContext().getDir(dir, Context.MODE_PRIVATE);
         if (!file.exists()) {
@@ -45,6 +46,7 @@ public final class FileUtils {
         return file;
     }
 
+    //获取下载的Bundle路径： /data/data/包名/app_small_patch，如果没有则创建
     public static File getDownloadBundlePath() {
         return getInternalFilesPath(DOWNLOAD_PATH);
     }

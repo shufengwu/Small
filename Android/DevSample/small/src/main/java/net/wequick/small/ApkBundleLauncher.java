@@ -83,6 +83,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
     private static final String FD_STORAGE = "storage";
     private static final String FILE_DEX = "bundle.dex";
 
+    //LoadedApk类
     private static class LoadedApk {
         public String packageName;
         public File packagePath;
@@ -538,6 +539,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         ReflectAccelerator.mergeResources(app, paths);
 
         // Merge all the dex into host's class loader
+        //获取宿主类加载器
         ClassLoader cl = app.getClassLoader();
         i = 0;
         int N = apks.size();
@@ -553,6 +555,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
             }
             i++;
         }
+        //扩展DexPathList
         ReflectAccelerator.expandDexPathList(cl, dexPaths, dexFiles);
 
         // Expand the native library directories for host class loader if plugin has any JNIs. (#79)
@@ -603,7 +606,9 @@ public class ApkBundleLauncher extends SoBundleLauncher {
     @Override
     public File getExtractPath(Bundle bundle) {
         Context context = Small.getContext();
+        //获取路径：/data/data/宿主包名/files/storage
         File packagePath = context.getFileStreamPath(FD_STORAGE);
+        //返回路径：/data/data/宿主包名/files/storage/插件包名
         return new File(packagePath, bundle.getPackageName());
     }
 
@@ -617,6 +622,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
     //判断插件是否能加载，能加载就启动activity；
     @Override
     public void loadBundle(Bundle bundle) {
+        //获取包名
         String packageName = bundle.getPackageName();
 
         BundleParser parser = bundle.getParser();
@@ -624,18 +630,22 @@ public class ApkBundleLauncher extends SoBundleLauncher {
         PackageInfo pluginInfo = parser.getPackageInfo();
 
         // Load the bundle
+        //data/app/宿主包名/lib/arm/.so
         String apkPath = parser.getSourcePath();
         if (sLoadedApks == null) sLoadedApks = new ConcurrentHashMap<String, LoadedApk>();
         LoadedApk apk = sLoadedApks.get(packageName);
         if (apk == null) {
             apk = new LoadedApk();
+            //包名
             apk.packageName = packageName;
             apk.path = apkPath;
             apk.nonResources = parser.isNonResources();
             if (pluginInfo.applicationInfo != null) {
                 apk.applicationName = pluginInfo.applicationInfo.className;
             }
+            //data/data/宿主包名/files/storage/插件包名
             apk.packagePath = bundle.getExtractPath();
+            //data/data/宿主包名/files/storage/插件包名/bundle.dex
             apk.optDexFile = new File(apk.packagePath, FILE_DEX);
 
             // Load dex
@@ -644,6 +654,7 @@ public class ApkBundleLauncher extends SoBundleLauncher {
                 @Override
                 public void run() {
                     try {
+                        //从so文件load dex文件
                         fApk.dexFile = DexFile.loadDex(fApk.path, fApk.optDexFile.getPath(), 0);
                     } catch (IOException e) {
                         throw new RuntimeException(e);

@@ -26,18 +26,22 @@ public class Application extends android.app.Application {
         Small.preSetUp(this);
     }
 
+    //WebViewClient类，辅助WebView处理各种通知、请求事件的
     private static final class MyWebViewClient extends WebViewClient {
 
         private ProgressDialog mDlg;
 
+        //在页面加载开始时调用。
         @Override
         public void onPageStarted(Context context, WebView view, String url, Bitmap favicon) {
+            //弹出"loading…"对话框
             mDlg = new ProgressDialog(context);
             mDlg.setMessage("Loading...");
             mDlg.show();
             super.onPageStarted(context, view, url, favicon);
         }
 
+        //在页面加载结束时调用,"loading…"对话框消失
         @Override
         public void onPageFinished(Context context, WebView view, String url) {
             super.onPageFinished(context, view, url);

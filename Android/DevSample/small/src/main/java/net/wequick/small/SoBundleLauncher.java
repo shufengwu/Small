@@ -35,7 +35,7 @@ import java.io.File;
  * </ul>
  * SoBundleLauncher主要是提供了一个preloadBundle函数实现，里面实现了
  * 1 按支持的type与package名对比，快速判断此BundleLauncher能否解析此插件；
- * 2 校验插件签名是否合法来确定是否要解析次插件；
+ * 2 校验插件签名是否合法来确定是否要解析此插件；
  */
 public abstract class SoBundleLauncher extends BundleLauncher implements BundleExtractor {
 
@@ -55,14 +55,17 @@ public abstract class SoBundleLauncher extends BundleLauncher implements BundleE
 
         boolean supporting = false;
         String bundleType = bundle.getType();
+        //如果用户在bundle.json中有定义支持的类型
         if (bundleType != null) {
             // Consider user-defined type in `bundle.json'
+            //判断是否支持用户bundle.json定义的类型
             for (String type : types) {
                 if (type.equals(bundleType)) {
                     supporting = true;
                     break;
                 }
             }
+            //如果用户在bundle.json中没有定义支持的类型，根据包名判断是不是支持
         } else {
             // Consider explicit type specify in package name as following:
             //  - com.example.[type].any
@@ -82,6 +85,7 @@ public abstract class SoBundleLauncher extends BundleLauncher implements BundleE
         if (!supporting) return false;
 
         // Initialize the extract path
+        ///data/data/宿主包名/files/storage/插件包名，用来存储.so解压出的dex文件
         File extractPath = getExtractPath(bundle);
         if (extractPath != null) {
             if (!extractPath.exists()) {
@@ -91,8 +95,10 @@ public abstract class SoBundleLauncher extends BundleLauncher implements BundleE
         }
 
         // Select the bundle entry-point, `built-in' or `patch'
+        //  /data/app/宿主包名/lib/arm/.so文件
         File plugin = bundle.getBuiltinFile();
         BundleParser parser = BundleParser.parsePackage(plugin, packageName);
+        // /data/data/宿主包名/app_small_patch/so文件
         File patch = bundle.getPatchFile();
         BundleParser patchParser = BundleParser.parsePackage(patch, packageName);
         if (parser == null) {
@@ -114,7 +120,9 @@ public abstract class SoBundleLauncher extends BundleLauncher implements BundleE
         bundle.setParser(parser);
 
         // Check if the plugin has not been modified
+        //获取文件最后一次被修改的时间
         long lastModified = plugin.lastModified();
+        //获取保存的最后一次被修改的时间
         long savedLastModified = Small.getBundleLastModified(packageName);
         if (savedLastModified != lastModified) {
             // If modified, verify (and extract) each file entry for the bundle

@@ -109,28 +109,36 @@ public final class Small {
         sContext = context;
 
         // Register default bundle launchers
+        //注册BundleLaunchers,放入List<BundleLauncher> sBundleLaunchers中
         registerLauncher(new ActivityLauncher());
         registerLauncher(new ApkBundleLauncher());
         registerLauncher(new WebBundleLauncher());
 
+        //PackageManager
         PackageManager pm = context.getPackageManager();
+        //获取package
         String packageName = context.getPackageName();
 
         // 检查主机应用程序是否是是第一次安装或升级
+        //判断宿主app是否是第一次安装或者更新
         try {
+            //获取PackageInfo
             PackageInfo pi = pm.getPackageInfo(packageName, 0);
-
+            //获取versionCode
             int launchingVersion = pi.versionCode;
             //判断宿主版本
+            //如果versionCode与之前的不一致
             if (getLaunchedHostVersionCode() != launchingVersion) {
                 sIsNewHostApp = true;
+                //设置为新的versionCode
                 setLaunchedHostVersionCode(launchingVersion);
             }
         } catch (PackageManager.NameNotFoundException ignored) {
             // Never reach
         }
 
-        // Collect host certificates 收集主机证书
+        // Collect host certificates
+        //获取已安装宿主程序完整签名信息,包括MD5指纹，存放在byte[][] sHostCertificates中
         try {
             Signature[] ss = pm.getPackageInfo(Small.getContext().getPackageName(),
                     PackageManager.GET_SIGNATURES).signatures;
@@ -146,9 +154,11 @@ public final class Small {
         }
 
         // Check if application is started after unexpected exit (killed in background etc.)
-        // 检查是否应用程序启动后意外退出（在后台死亡等）。
+        //检查应用是否是在意外退出后被启动
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        //获取当前task栈顶的Activity
         ComponentName launchingComponent = am.getRunningTasks(1).get(0).topActivity;
+        //程序默认启动的Activity
         ComponentName launcherComponent = pm.getLaunchIntentForPackage(packageName).getComponent();
         if (!launchingComponent.equals(launcherComponent)) {
             // In this case, system launching the last restored activity instead of our launcher
@@ -165,6 +175,7 @@ public final class Small {
                     "Please call `Small.preSetUp' in your application first");
         }
 
+        //判断是否已经setUp
         if (sHasSetUp) {
             if (listener != null) {
                 listener.onComplete();
@@ -202,11 +213,13 @@ public final class Small {
                 getSharedPreferences(SHARED_PREFERENCES_BUNDLE_VERSIONS, 0).getAll();
     }
 
+    //获取宿主versionCode
     private static int getLaunchedHostVersionCode() {
         return getContext().getSharedPreferences(SHARED_PREFERENCES_SMALL, 0).
                 getInt(SHARED_PREFERENCES_KEY_VERSION, 0);
     }
 
+    //设置宿主versionCode
     private static void setLaunchedHostVersionCode(int versionCode) {
         SharedPreferences small = getContext().getSharedPreferences(SHARED_PREFERENCES_SMALL, 0);
         SharedPreferences.Editor editor = small.edit();
@@ -265,10 +278,12 @@ public final class Small {
         return false;
     }
 
+    //打开uri
     public static void openUri(String uriString, Context context) {
         openUri(makeUri(uriString), context);
     }
 
+    //打开uri
     public static void openUri(Uri uri, Context context) {
         // System url schemes
         String scheme = uri.getScheme();
@@ -339,6 +354,7 @@ public final class Small {
         return Bundle.getLaunchableBundles();
     }
 
+    //注册launcher
     public static void registerLauncher(BundleLauncher launcher) {
         Bundle.registerLauncher(launcher);
     }

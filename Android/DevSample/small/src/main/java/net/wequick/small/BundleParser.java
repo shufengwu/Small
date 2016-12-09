@@ -59,6 +59,7 @@ public class BundleParser {
 
     /* com.android.internal.R.styleable.* on
      * https://github.com/android/platform_frameworks_base/blob/gingerbread-release/core%2Fres%2Fres%2Fvalues%2Fpublic.xml
+     * xref: /frameworks/base/core/res/res/values/public.xml
      */
     private static final class R {
         public static final class styleable {
@@ -132,6 +133,7 @@ public class BundleParser {
         return bp;
     }
 
+    //解析包信息
     public boolean parsePackage() {
         AssetManager assmgr = null;
         boolean assetError = true;
@@ -139,8 +141,10 @@ public class BundleParser {
             assmgr = ReflectAccelerator.newAssetManager();
             if (assmgr == null) return false;
 
+            //将资源加载到AssetManager对象中
             int cookie = ReflectAccelerator.addAssetPath(assmgr, mArchiveSourcePath);
             if(cookie != 0) {
+                //获得XmlResourceParser对象
                 parser = assmgr.openXmlResourceParser(cookie, "AndroidManifest.xml");
                 assetError = false;
             } else {
@@ -155,20 +159,25 @@ public class BundleParser {
             return false;
         }
 
+        //Resources对象，有了这个Resources对象之后，我们就可以通过资源ID来访问那些被编译过的应用程序资源了。
         res = new Resources(assmgr, mContext.getResources().getDisplayMetrics(), null);
         return parsePackage(res, parser);
     }
 
+    //解析AndroidManifest
     private boolean parsePackage(Resources res, XmlResourceParser parser) {
+        //AttributeSet用来接收xml属性信息,用于获得一系列基本的属性值
         AttributeSet attrs = parser;
         mPackageInfo = new PackageInfo();
 
         try {
             int type;
+            //如果在xml文件的起始标签或者文件结尾就等待
             while ((type=parser.next()) != XmlResourceParser.START_TAG
                     && type != XmlResourceParser.END_DOCUMENT) ;
 
             // <manifest ...
+            //读取AndroidManifest.xml中的package
             mPackageInfo.packageName = parser.getAttributeValue(null, "package").intern();
 
             // After gradle-small 0.9.0, we roll out
@@ -185,10 +194,13 @@ public class BundleParser {
             int abiFlags = (flags & 0xFFFFF000) >> 12;
             mNonResources = (flags & 0x800) != 0;
 
+            //获取versionCode和versionName放入到TypedArray中
             TypedArray sa = res.obtainAttributes(attrs,
                     R.styleable.AndroidManifest);
+            //获取versionCode
             mPackageInfo.versionCode = sa.getInteger(
                     R.styleable.AndroidManifest_versionCode, 0);
+            //获取versionName
             String versionName = sa.getString(
                     R.styleable.AndroidManifest_versionName);
             if (versionName != null) {
@@ -202,6 +214,7 @@ public class BundleParser {
                 }
 
                 String tagName = parser.getName();
+                //application
                 if (tagName.equals("application")) {
                     ApplicationInfo host = mContext.getApplicationInfo();
                     ApplicationInfo app = new ApplicationInfo(host);
@@ -209,6 +222,7 @@ public class BundleParser {
                     sa = res.obtainAttributes(attrs,
                             R.styleable.AndroidManifestApplication);
 
+                    //获取android:name
                     String name = sa.getString(
                             R.styleable.AndroidManifestApplication_name);
                     if (name != null) {
@@ -222,6 +236,7 @@ public class BundleParser {
                     // TODO: Remove this if the gradle-small 0.9.0 or above being widely used.
                     if (abiFlags == 0) {
                         TypedValue label = new TypedValue();
+                        //android:label
                         if (sa.getValue(R.styleable.AndroidManifestApplication_label, label)) {
                             if (label.type == TypedValue.TYPE_STRING) {
                                 abiFlags = Integer.parseInt(label.string.toString());
@@ -235,9 +250,11 @@ public class BundleParser {
                         }
                     }
 
+                    //android:theme
                     app.theme = sa.getResourceId(
                             R.styleable.AndroidManifestApplication_theme, 0);
 
+                    //android:hardwareAccelerated
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                         mUsesHardwareAccelerated = sa.getBoolean(
                                 R.styleable.AndroidManifestApplication_hardwareAccelerated,
@@ -266,6 +283,7 @@ public class BundleParser {
         return false;
     }
 
+    //解析Activity配置信息
     public boolean collectActivities() {
         if (mPackageInfo == null || mPackageInfo.applicationInfo == null) return false;
         AttributeSet attrs = parser;
@@ -288,13 +306,18 @@ public class BundleParser {
 
                 TypedArray sa = res.obtainAttributes(attrs,
                         R.styleable.AndroidManifestActivity);
+                //android:name
                 String name = sa.getString(R.styleable.AndroidManifestActivity_name);
                 if (name != null) {
                     ai.name = ai.targetActivity = buildClassName(mPackageName, name);
                 }
+                //android:label
                 ai.labelRes = sa.getResourceId(R.styleable.AndroidManifestActivity_label, 0);
+                //android:icon
                 ai.icon = sa.getResourceId(R.styleable.AndroidManifestActivity_icon, 0);
+                //android:theme
                 ai.theme = sa.getResourceId(R.styleable.AndroidManifestActivity_theme, 0);
+                //android:launchMode
                 ai.launchMode = sa.getInteger(R.styleable.AndroidManifestActivity_launchMode, 0);
                 //noinspection ResourceType
                 ai.screenOrientation = sa.getInt(
@@ -303,6 +326,7 @@ public class BundleParser {
                 ai.softInputMode = sa.getInteger(
                         R.styleable.AndroidManifestActivity_windowSoftInputMode, 0);
 
+                //android:hardwareAccelerated
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
                     boolean hardwareAccelerated = sa.getBoolean(
                             R.styleable.AndroidManifestActivity_hardwareAccelerated,
@@ -522,6 +546,7 @@ public class BundleParser {
     private static final String ANDROID_RESOURCES
             = "http://schemas.android.com/apk/res/android";
 
+    //解析intent-filter
     private boolean parseIntent(Resources res, XmlResourceParser parser, AttributeSet attrs,
                                 boolean allowGlobs, boolean allowAutoVerify, IntentFilter outInfo)
             throws XmlPullParserException, IOException {
@@ -534,6 +559,7 @@ public class BundleParser {
                 continue;
             }
 
+            //<action
             String nodeName = parser.getName();
             if (nodeName.equals("action")) {
                 String value = attrs.getAttributeValue(
@@ -544,6 +570,7 @@ public class BundleParser {
                 skipCurrentTag(parser);
 
                 outInfo.addAction(value);
+            //<category
             } else if (nodeName.equals("category")) {
                 String value = attrs.getAttributeValue(
                         ANDROID_RESOURCES, "name");
@@ -554,10 +581,12 @@ public class BundleParser {
 
                 outInfo.addCategory(value);
 
+            //<data
             } else if (nodeName.equals("data")) {
                 sa = res.obtainAttributes(attrs,
                         R.styleable.AndroidManifestData);
 
+                //<android:mimetype
                 String str = sa.getString(
                         R.styleable.AndroidManifestData_mimeType);
                 if (str != null) {
@@ -569,32 +598,38 @@ public class BundleParser {
                     }
                 }
 
+                //<android:scheme
                 str = sa.getString(
                         R.styleable.AndroidManifestData_scheme);
                 if (str != null) {
                     outInfo.addDataScheme(str);
                 }
 
+                //<android:host
                 String host = sa.getString(
                         R.styleable.AndroidManifestData_host);
+                //<android:port
                 String port = sa.getString(
                         R.styleable.AndroidManifestData_port);
                 if (host != null) {
                     outInfo.addDataAuthority(host, port);
                 }
 
+                //<android:path
                 str = sa.getString(
                         R.styleable.AndroidManifestData_path);
                 if (str != null) {
                     outInfo.addDataPath(str, PatternMatcher.PATTERN_LITERAL);
                 }
 
+                //<android:pathPrefix
                 str = sa.getString(
                         R.styleable.AndroidManifestData_pathPrefix);
                 if (str != null) {
                     outInfo.addDataPath(str, PatternMatcher.PATTERN_PREFIX);
                 }
 
+                //<android:pathPattern
                 str = sa.getString(
                         R.styleable.AndroidManifestData_pathPattern);
                 if (str != null) {
@@ -739,10 +774,12 @@ public class BundleParser {
 
         CrcVerifier(Context context, String packageName, byte[][] certs) {
             try {
+                //路径/data/data/net.wequick.example.small/files/.scrc
                 File crcPath = context.getFileStreamPath(CRC_EXTENSION);
                 if (!crcPath.exists()) {
                     crcPath.mkdir();
                 }
+                //路径/data/data/net.wequick.example.small/files/插件包名.scrc
                 File crcFile = new File(crcPath, packageName + CRC_EXTENSION);
                 boolean exists = crcFile.exists();
                 if (!exists) {

@@ -38,6 +38,7 @@ public class ApplicationUtils {
      * @param context current context
      * @return <tt>true</tt> if <tt>uri</tt> can be opened by android system.
      */
+    //判断uri能否被打开
     public static boolean canOpenUri(Uri uri, Context context) {
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         PackageManager packageManager = context.getPackageManager();
